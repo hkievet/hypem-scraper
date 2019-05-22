@@ -1,0 +1,16 @@
+{
+  "name": "hypem_scanner",
+  "version": "1.0.0",
+  "description": "A database replication through webcrawler project",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "selenium-webdriver": "^4.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
