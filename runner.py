@@ -5,6 +5,7 @@ import pickle
 
 link_file = "links2scrape"
 
+
 def get_links():
     with webdriver.Safari() as driver:
         driver.get("https://hypem.com")
@@ -25,8 +26,62 @@ def get_links():
         pickle.dump(links, outfile)
         outfile.close()
 
+
 def scrape_song_info(driver, link):
-    return
+    driver.get(link)
+    time.sleep(3)
+    soup = BeautifulSoup(driver.page_source, features="html.parser")
+    tracks = soup.select('.haarp-section-track')
+    song_data = []
+    for i in range(5):
+        track_soup = tracks[i]
+        header = track_soup.select('.track_name')
+        if not header:
+            print(f"WARNING: missed a song: {link}")
+            continue
+        header = header[0]
+        track_artist = ""
+        s = header.select('.artist')
+        if s and s[0] and s:
+            track_artist = s[0].text
+        track_name = ""
+        s = header.select('.base-title')
+        if s:
+            track_name = s[0].text
+        remix_link = ""
+        s = header.select('.remix-link')
+        if s:
+            remix_link = s[0].text
+        remix_count = 0
+        s = header.select('.remix-count')
+        if s:
+            remix_count = s[0].text
+        data = {
+            'track_name': track_name,
+            'track_artist': track_artist,
+            'remix_link': remix_link,
+            'remix_count': remix_count
+        }
+        song_data.append(data)
+
+    if song_data:
+        save_songs(song_data)
+        return True
+
+    return False
+
+
+def pickel_links(data):
+    outfile = open(link_file, 'wb')
+    pickle.dump(data, outfile)
+    outfile.close()
+
+
+def save_songs(all_song_data):
+    with open('songs.txt', 'a+') as data_file:
+        for song in all_song_data:
+            data_file.write(
+                f"{song.get('track_name')}, {song['track_artist']}, {song['remix_link']}, {song['remix_count']}\n")
 
 
 def process_links():
@@ -38,17 +93,24 @@ def process_links():
         driver.find_element_by_link_text('Log in').click()
         driver.find_element_by_id('user_screen_name').send_keys('un')
         driver.find_element_by_id('user_password').send_keys('pw')
-        driver.find_element_by_id('defaultform').submit()
+        driver.find_element_by_id('submitlogin').click()
         time.sleep(5)
         for link in data:
-            if not link.scraped:
-                scrape_song_info(driver, link['link'])
+            if not link['scraped']:
+                success = scrape_song_info(
+                    driver, f"https://hypem.com{link['link']}")
+                if success:
+                    link['scraped'] = True
+                    pickel_links(data)
+                    print('successfully pickeled a link!')
+                time.sleep(2)
+
 
 def practice_scrape():
-    with webdriver.Safari() as driver:
-        driver.get("https://hypem.com/popular/lastweek")
-        soup = BeautifulSoup(driver.page_source, format="html.parser")
+    process_links()
+    # scrape_song_info(driver, 'https://hypem.com/popular')
+    # driver.get("https://hypem.com/popular/lastweek")
+    # soup = BeautifulSoup(driver.page_source, format="html.parser")
 
 
-practice_scrape():
-
+practice_scrape()
