@@ -9,7 +9,6 @@ const { Builder, By, Key, until } = require("selenium-webdriver");
     await driver.findElement(By.id("user_password")).sendKeys("password");
     await driver.findElement(By.id("defaultForm")).submit();
     await driver.get("https://hypem.com/popular/lastweek");
-    console.log(driver.getPageSource());
   } finally {
     await driver.quit();
   }

@@ -2,6 +2,7 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 import time
 import pickle
+import json
 
 link_file = "links2scrape"
 
@@ -31,6 +32,10 @@ def scrape_song_info(driver, link):
     driver.get(link)
     time.sleep(3)
     soup = BeautifulSoup(driver.page_source, features="html.parser")
+    time_machine_header = soup.select("#message")[0]
+    t = time_machine_header.text
+    date_text = t[t.index("(")+1:-2]
+
     tracks = soup.select('.haarp-section-track')
     song_data = []
     for i in range(5):
@@ -56,11 +61,21 @@ def scrape_song_info(driver, link):
         s = header.select('.remix-count')
         if s:
             remix_count = s[0].text
+        meta = track_soup.select('.meta')
+        spotify_hyperlink = ""
+        if meta:
+            meta = meta[0]
+            spotify_link = meta.find_all("a", text="Spotify")
+            if spotify_link:
+                spotify_hyperlink = spotify_link[0]['href']
+
         data = {
             'track_name': track_name,
             'track_artist': track_artist,
             'remix_link': remix_link,
-            'remix_count': remix_count
+            'remix_count': remix_count,
+            'date_text': date_text,
+            'spotify_link': spotify_hyperlink,
         }
         song_data.append(data)
 
@@ -80,8 +95,9 @@ def pickel_links(data):
 def save_songs(all_song_data):
     with open('songs.txt', 'a+') as data_file:
         for song in all_song_data:
-            data_file.write(
-                f"{song.get('track_name')}, {song['track_artist']}, {song['remix_link']}, {song['remix_count']}\n")
+            data_file.write(json.dumps(song) + "\n")
+            # data_file.write(
+            # f"{song.get('track_name')}, {song['track_artist']}, {song['remix_link']}, {song['remix_count']}\n")
 
 
 def process_links():
@@ -106,6 +122,19 @@ def process_links():
                 time.sleep(2)
 
 
+def reset_links():
+    infile = open(link_file, 'rb')
+    data = pickle.load(infile)
+    infile.close()
+    for d in data:
+        if d['link'] == '/popular/week:Oct-12-2015':
+            d['scraped'] = True
+            break
+        else:
+            d['scraped'] = True
+    pickel_links(data)
+
+
 def practice_scrape():
     process_links()
     # scrape_song_info(driver, 'https://hypem.com/popular')
@@ -113,4 +142,6 @@ def practice_scrape():
     # soup = BeautifulSoup(driver.page_source, format="html.parser")
 
 
+# reset_links()
+# get_links()
 practice_scrape()
